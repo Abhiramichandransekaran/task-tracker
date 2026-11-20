@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { BrandMark, LogoutIcon, ShieldIcon } from "./components/icons";
+import { BrandMark, LogoutIcon } from "./components/icons";
 import { LoginPage } from "./components/LoginPage";
 import { TaskFilters } from "./components/TaskFilters";
 import { TaskForm } from "./components/TaskForm";
@@ -86,20 +86,25 @@ export default function App() {
         <div className="topbar-inner">
           <div className="topbar-left">
             <BrandMark />
-            <span className="brand-name">Team tracker</span>
-            <span className="topbar-badge">
-              <ShieldIcon /> Admin
-            </span>
+            <div className="brand-group">
+              <span className="brand-name">Team tracker</span>
+              <span className="brand-divider" aria-hidden="true">/</span>
+              <span className="admin-status-badge">
+                <span className="status-live-dot" aria-hidden="true" />
+                Admin Console
+              </span>
+            </div>
           </div>
 
           <div className="topbar-right">
-            <div className="user-profile-chip" title={`Logged in as ${currentUser.name}`}>
+            <div className="user-profile-chip" title={`Authenticated as ${currentUser.name}`}>
               <div className="user-avatar" aria-hidden="true">
                 {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : "A"}
+                <span className="user-online-dot" />
               </div>
               <div className="user-info">
                 <span className="user-name">{currentUser.name}</span>
-                <span className="user-role">@{currentUser.username}</span>
+                <span className="user-role">Administrator</span>
               </div>
             </div>
 
@@ -119,8 +124,30 @@ export default function App() {
 
       <main className="layout">
         <div className="page-head">
-          <h1>Tasks and bugs</h1>
-          <p>Log what the team is working on, move it along, and clear out what's done.</p>
+          <div className="page-head-title-row">
+            <div>
+              <h1>Tasks and bugs</h1>
+              <p>Log what the team is working on, move it along, and clear out what's done.</p>
+            </div>
+            <div className="page-head-stats" aria-label="Task overview metrics">
+              <div className="stat-chip">
+                <span className="stat-label">Total</span>
+                <span className="stat-value">{counts.all}</span>
+              </div>
+              <div className="stat-chip stat-chip--todo">
+                <span className="stat-label">To Do</span>
+                <span className="stat-value">{counts.todo}</span>
+              </div>
+              <div className="stat-chip stat-chip--progress">
+                <span className="stat-label">In Progress</span>
+                <span className="stat-value">{counts.in_progress}</span>
+              </div>
+              <div className="stat-chip stat-chip--done">
+                <span className="stat-label">Done</span>
+                <span className="stat-value">{counts.done}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <aside className="panel panel--form">
