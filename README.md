@@ -173,6 +173,21 @@ The ID check is strict: anything that is not a 24-character hex ObjectId returns
 
 ---
 
+## Admin Authentication
+
+The application features a secure admin login gate:
+
+| Credential | Value |
+|---|---|
+| **Username** | `admin` (or `admin@tasktracker.com`) |
+| **Password** | `admin123` |
+
+- **Dedicated Admin Login Screen**: Restricts workspace access to authenticated administrators with strict validation and error alerts.
+- **Session Persistence**: Stored securely in `localStorage` with topbar user profile and one-click Sign Out.
+- **REST Auth Endpoint**: `POST /api/auth/login` validated with Zod.
+
+---
+
 ## Trade-offs (3-hour time box)
 
 1. **Types are mirrored, not shared.** The frontend's `types.ts` restates the backend's Zod schemas by hand. A shared workspace package (or exporting the Zod schemas to the client) would make the types truly single-source, but it adds monorepo tooling. With more time, I would share the schemas so a field change cannot drift between the two apps.

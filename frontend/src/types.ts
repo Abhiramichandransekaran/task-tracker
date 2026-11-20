@@ -61,3 +61,22 @@ export const isTaskStatus = (value: string): value is TaskStatus =>
 
 export const isTaskPriority = (value: string): value is TaskPriority =>
   (TASK_PRIORITIES as readonly string[]).includes(value);
+
+/** Authentication Types */
+export interface AdminUser {
+  username: string;
+  name: string;
+  role: string;
+  email?: string;
+}
+
+export interface LoginPayload {
+  username: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  message: string;
+  token: string;
+  user: AdminUser;
+}

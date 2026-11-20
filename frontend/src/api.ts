@@ -2,13 +2,16 @@ import type {
   ApiErrorBody,
   CreateTaskPayload,
   FieldError,
+  LoginPayload,
+  LoginResponse,
   Task,
   TaskFilters,
   UpdateTaskPayload,
 } from "./types";
 
 // Empty by default: requests go to /api on the Vite dev server, which proxies to the backend.
-const BASE_URL = `${import.meta.env.VITE_API_URL ?? ""}/api/tasks`;
+const BASE_TASKS_URL = `${import.meta.env.VITE_API_URL ?? ""}/api/tasks`;
+const BASE_AUTH_URL = `${import.meta.env.VITE_API_URL ?? ""}/api/auth`;
 const UNREACHABLE = "Can't reach the server. Check that the backend is running on port 5000.";
 
 export class ApiError extends Error {
@@ -27,12 +30,12 @@ function isApiErrorBody(value: unknown): value is ApiErrorBody {
   return typeof value === "object" && value !== null && typeof (value as ApiErrorBody).message === "string";
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
   const headers = init.body ? { "Content-Type": "application/json" } : undefined;
 
   let res: Response;
   try {
-    res = await fetch(`${BASE_URL}${path}`, { ...init, headers });
+    res = await fetch(url, { ...init, headers });
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") throw err;
     throw new ApiError(0, { message: UNREACHABLE });
@@ -53,19 +56,26 @@ export function listTasks(filters: TaskFilters, signal?: AbortSignal): Promise<T
   if (filters.status) params.set("status", filters.status);
   if (filters.priority) params.set("priority", filters.priority);
   const query = params.toString();
-  return request<Task[]>(query ? `?${query}` : "", { signal });
+  return request<Task[]>(`${BASE_TASKS_URL}${query ? `?${query}` : ""}`, { signal });
 }
 
 export function createTask(payload: CreateTaskPayload): Promise<Task> {
-  return request<Task>("", { method: "POST", body: JSON.stringify(payload) });
+  return request<Task>(BASE_TASKS_URL, { method: "POST", body: JSON.stringify(payload) });
 }
 
 export function updateTask(id: string, payload: UpdateTaskPayload): Promise<Task> {
-  return request<Task>(`/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
+  return request<Task>(`${BASE_TASKS_URL}/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
 }
 
 export function deleteTask(id: string): Promise<{ message: string; id: string }> {
-  return request(`/${id}`, { method: "DELETE" });
+  return request(`${BASE_TASKS_URL}/${id}`, { method: "DELETE" });
+}
+
+export function loginAdmin(payload: LoginPayload): Promise<LoginResponse> {
+  return request<LoginResponse>(`${BASE_AUTH_URL}/login`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export function errorMessage(err: unknown): string {
