@@ -10,8 +10,9 @@ import type {
 } from "./types";
 
 // Empty by default: requests go to /api on the Vite dev server, which proxies to the backend.
-const BASE_TASKS_URL = `${import.meta.env.VITE_API_URL ?? ""}/api/tasks`;
-const BASE_AUTH_URL = `${import.meta.env.VITE_API_URL ?? ""}/api/auth`;
+const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
+const BASE_TASKS_URL = `${API_BASE}/api/tasks`;
+const BASE_AUTH_URL = `${API_BASE}/api/auth`;
 const UNREACHABLE = "Can't reach the server. Check that the backend is running on port 5000.";
 
 export class ApiError extends Error {
