@@ -26,10 +26,22 @@ export default function App() {
   });
 
   const [filters, setFilters] = useState<Filters>({});
+  const [searchQuery, setSearchQuery] = useState("");
   const { tasks, counts, loading, error, reload, createTask, updateStatus, deleteTask } =
     useTasks(filters);
   const { toast, notify } = useToast();
-  const filtered = Boolean(filters.status || filters.priority);
+  const filtered = Boolean(filters.status || filters.priority || searchQuery);
+
+  const displayedTasks = tasks.filter((t) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      t.title.toLowerCase().includes(q) ||
+      (t.description && t.description.toLowerCase().includes(q))
+    );
+  });
+
+  const completionPercent = counts.all > 0 ? Math.round((counts.done / counts.all) * 100) : 0;
 
   const handleLoginSuccess = useCallback(
     (user: AdminUser) => {
@@ -82,6 +94,7 @@ export default function App() {
 
   return (
     <div className="app">
+      {/* Top Navbar */}
       <header className="topbar">
         <div className="topbar-inner">
           <div className="topbar-left">
@@ -122,47 +135,84 @@ export default function App() {
         </div>
       </header>
 
+      {/* Main Dashboard Layout */}
       <main className="layout">
-        <div className="page-head">
-          <div className="page-head-title-row">
-            <div>
-              <h1>Tasks and bugs</h1>
-              <p>Log what the team is working on, move it along, and clear out what's done.</p>
+        {/* Executive Header with Progress & Stat Cards */}
+        <section className="dashboard-hero">
+          <div className="hero-text-block">
+            <h1 className="hero-heading">Team Tasks & Bug Tracker</h1>
+            <p className="hero-subheading">
+              Manage work items, assign status progression, and collaborate in real time.
+            </p>
+          </div>
+
+          {/* Metric Cards Banner */}
+          <div className="metrics-grid">
+            <div className="metric-card metric-card--total">
+              <span className="metric-label">Total Issues</span>
+              <div className="metric-value-row">
+                <span className="metric-number">{counts.all}</span>
+                <span className="metric-pill">All time</span>
+              </div>
             </div>
-            <div className="page-head-stats" aria-label="Task overview metrics">
-              <div className="stat-chip">
-                <span className="stat-label">Total</span>
-                <span className="stat-value">{counts.all}</span>
+
+            <div className="metric-card metric-card--todo">
+              <span className="metric-label">To Do</span>
+              <div className="metric-value-row">
+                <span className="metric-number">{counts.todo}</span>
+                <span className="metric-status-dot metric-status-dot--todo" />
               </div>
-              <div className="stat-chip stat-chip--todo">
-                <span className="stat-label">To Do</span>
-                <span className="stat-value">{counts.todo}</span>
+            </div>
+
+            <div className="metric-card metric-card--progress">
+              <span className="metric-label">In Progress</span>
+              <div className="metric-value-row">
+                <span className="metric-number">{counts.in_progress}</span>
+                <span className="metric-status-dot metric-status-dot--progress" />
               </div>
-              <div className="stat-chip stat-chip--progress">
-                <span className="stat-label">In Progress</span>
-                <span className="stat-value">{counts.in_progress}</span>
+            </div>
+
+            <div className="metric-card metric-card--done">
+              <span className="metric-label">Completed</span>
+              <div className="metric-value-row">
+                <span className="metric-number">{counts.done}</span>
+                <span className="metric-status-dot metric-status-dot--done" />
               </div>
-              <div className="stat-chip stat-chip--done">
-                <span className="stat-label">Done</span>
-                <span className="stat-value">{counts.done}</span>
+              <div className="completion-bar-track" title={`${completionPercent}% completed`}>
+                <div
+                  className="completion-bar-fill"
+                  style={{ width: `${completionPercent}%` }}
+                />
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <aside className="panel panel--form">
+        {/* Left Column: Create Task Form */}
+        <aside className="panel-container panel-container--form">
           <TaskForm onCreate={createTask} />
         </aside>
 
-        <section className="panel panel--list" aria-label="Task list">
-          <TaskFilters value={filters} counts={counts} showCounts={!error} onChange={setFilters} />
+        {/* Right Column: Task List & Filter Controls */}
+        <section className="panel-container panel-container--list" aria-label="Task list">
+          <TaskFilters
+            value={filters}
+            counts={counts}
+            showCounts={!error}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onChange={setFilters}
+          />
           <TaskList
-            tasks={tasks}
+            tasks={displayedTasks}
             loading={loading}
             error={error}
             filtered={filtered}
             onRetry={reload}
-            onClearFilters={() => setFilters({})}
+            onClearFilters={() => {
+              setFilters({});
+              setSearchQuery("");
+            }}
             onStatusChange={handleStatusChange}
             onDelete={handleDelete}
           />
