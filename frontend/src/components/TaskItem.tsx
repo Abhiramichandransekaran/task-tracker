@@ -15,9 +15,10 @@ interface TaskItemProps {
   task: Task;
   onStatusChange: (id: string, status: TaskStatus) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onSelectTask?: (task: Task) => void;
 }
 
-export function TaskItem({ task, onStatusChange, onDelete }: TaskItemProps) {
+export function TaskItem({ task, onStatusChange, onDelete, onSelectTask }: TaskItemProps) {
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,111 +51,108 @@ export function TaskItem({ task, onStatusChange, onDelete }: TaskItemProps) {
 
   return (
     <li
-      className={`task-card task-card--${task.status} task-card--priority-${task.priority}${
-        confirming ? " task-card--confirming" : ""
-      }`}
+      className={`task task--${task.priority} ${busy ? "task--busy" : ""} ${task.status === "done" ? "task--done" : ""}`}
       aria-busy={busy}
-      onKeyDown={(e) => confirming && e.key === "Escape" && cancelDelete()}
+      onClick={() => onSelectTask?.(task)}
+      style={{ cursor: "pointer" }}
     >
-      <div className="task-card-accent" aria-hidden="true" />
-
-      <div className="task-card-main">
-        {/* Top meta row with short ID and priority badge */}
-        <div className="task-card-header">
-          <span className="task-id-badge">{shortId}</span>
-          <span className={`task-priority-badge task-priority-badge--${task.priority}`}>
-            <PriorityIcon priority={task.priority} />
-            <span>{PRIORITY_LABELS[task.priority]}</span>
-          </span>
-        </div>
-
-        {/* Title and Description */}
-        <h3 className="task-title">{task.title}</h3>
-        {task.description && <p className="task-description">{task.description}</p>}
-
-        {/* Footer meta row with time */}
-        <div className="task-card-footer">
-          <time
-            className="task-timestamp"
-            dateTime={task.createdAt}
-            title={fullDateTime(task.createdAt)}
-          >
-            <ClockIcon />
-            <span>{relativeTime(task.createdAt)}</span>
-          </time>
-          {error && (
-            <p className="task-error-text" role="alert">
-              {error}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Action controls */}
-      <div className="task-card-actions">
-        {confirming ? (
-          <div
-            className="task-confirm-box"
-            role="group"
-            aria-label={`Confirm deleting ${task.title}`}
-          >
-            <span className="task-confirm-prompt">Delete issue?</span>
-            <div className="task-confirm-buttons">
-              <button
-                type="button"
-                className="btn-cancel"
-                onClick={cancelDelete}
-                disabled={busy}
-              >
-                Cancel
-              </button>
-              <button
-                ref={confirmRef}
-                type="button"
-                className="btn-delete-confirm"
-                onClick={() => void run(() => onDelete(task._id))}
-                disabled={busy}
-              >
-                {busy ? "Deleting…" : "Delete"}
-              </button>
-            </div>
+      <div className="task-content">
+        {/* Header Bar with ID, Priority and Time */}
+        <div className="task-header-row">
+          <div className="task-meta-left">
+            <span className="task-short-id" title={task._id}>{shortId}</span>
+            <span className={`priority-tag priority-tag--${task.priority}`}>
+              <PriorityIcon priority={task.priority} />
+              {PRIORITY_LABELS[task.priority]}
+            </span>
           </div>
-        ) : (
-          <div className="task-controls">
-            <label className="visually-hidden" htmlFor={statusId}>
+
+          <div className="task-status-control" onClick={(e) => e.stopPropagation()}>
+            <label htmlFor={statusId} className="visually-hidden">
               Status for {task.title}
             </label>
-            <div className={`status-pill-select status-pill-select--${task.status}`}>
-              <span className="status-indicator-dot" aria-hidden="true" />
+            <div className={`status-pill status-pill--${task.status}`}>
+              <span className="status-pill-indicator" aria-hidden="true" />
               <select
                 id={statusId}
+                className="status-pill-select"
                 value={task.status}
                 disabled={busy}
                 onChange={(e) => {
                   const next = e.target.value;
-                  if (isTaskStatus(next)) void run(() => onStatusChange(task._id, next));
+                  if (isTaskStatus(next)) {
+                    run(() => onStatusChange(task._id, next));
+                  }
                 }}
               >
-                {TASK_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {STATUS_LABELS[s]}
+                {TASK_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {STATUS_LABELS[status]}
                   </option>
                 ))}
               </select>
             </div>
 
-            <button
-              ref={deleteRef}
-              type="button"
-              className="action-icon-btn action-icon-btn--delete"
-              onClick={() => setConfirming(true)}
-              disabled={busy}
-              aria-label={`Delete ${task.title}`}
-              title="Delete issue"
-            >
-              <TrashIcon />
-            </button>
+            {confirming ? (
+              <div
+                className="delete-confirm"
+                role="group"
+                aria-label={`Confirm delete for ${task.title}`}
+              >
+                <button
+                  ref={confirmRef}
+                  type="button"
+                  className="button button--danger button--micro"
+                  disabled={busy}
+                  onClick={() => run(() => onDelete(task._id))}
+                >
+                  Delete
+                </button>
+                <button
+                  type="button"
+                  className="button button--subtle button--micro"
+                  disabled={busy}
+                  onClick={cancelDelete}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                ref={deleteRef}
+                type="button"
+                className="task-delete-icon-btn"
+                disabled={busy}
+                onClick={() => setConfirming(true)}
+                aria-label={`Delete task ${task.title}`}
+                title="Delete issue"
+              >
+                <TrashIcon />
+              </button>
+            )}
           </div>
+        </div>
+
+        {/* Title and Description */}
+        <div className="task-body">
+          <h3 className="task-title">{task.title}</h3>
+          {task.description && (
+            <p className="task-description">{task.description}</p>
+          )}
+        </div>
+
+        {/* Footer info row */}
+        <div className="task-footer-row">
+          <span className="task-timestamp" title={fullDateTime(task.createdAt)}>
+            <ClockIcon /> {relativeTime(task.createdAt)}
+          </span>
+          <span className="task-click-hint">Click to inspect ↗</span>
+        </div>
+
+        {error && (
+          <p className="task-inline-error" role="alert">
+            {error}
+          </p>
         )}
       </div>
     </li>

@@ -10,6 +10,7 @@ interface TaskListProps {
   onClearFilters: () => void;
   onStatusChange: (id: string, status: TaskStatus) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onSelectTask?: (task: Task) => void;
 }
 
 export function TaskList({
@@ -21,6 +22,7 @@ export function TaskList({
   onClearFilters,
   onStatusChange,
   onDelete,
+  onSelectTask,
 }: TaskListProps) {
   if (error) {
     return (
@@ -50,27 +52,34 @@ export function TaskList({
 
   if (tasks.length === 0) {
     return (
-      <div className="list-state">
-        {filtered ? (
-          <>
-            <p className="list-state-title">No tasks match these filters</p>
-            <p>Try another status or priority, or clear the filters to see everything.</p>
-            <button type="button" className="button" onClick={onClearFilters}>Clear filters</button>
-          </>
-        ) : (
-          <>
-            <p className="list-state-title">No tasks yet</p>
-            <p>Log a bug or task with the form, and it will show up here for the team.</p>
-          </>
+      <div className="list-state" role="status">
+        <p className="list-state-title">
+          {filtered ? "No issues match your current filters" : "No issues logged yet"}
+        </p>
+        <p className="list-state-body">
+          {filtered
+            ? "Try loosening your search term or status selection."
+            : "Use the form on the left to log the team's first task."}
+        </p>
+        {filtered && (
+          <button type="button" className="button button--subtle" onClick={onClearFilters}>
+            Reset all filters
+          </button>
         )}
       </div>
     );
   }
 
   return (
-    <ul className={`task-list${loading ? " task-list--refreshing" : ""}`} aria-busy={loading}>
+    <ul className="task-list" aria-label="Tasks">
       {tasks.map((task) => (
-        <TaskItem key={task._id} task={task} onStatusChange={onStatusChange} onDelete={onDelete} />
+        <TaskItem
+          key={task._id}
+          task={task}
+          onStatusChange={onStatusChange}
+          onDelete={onDelete}
+          onSelectTask={onSelectTask}
+        />
       ))}
     </ul>
   );

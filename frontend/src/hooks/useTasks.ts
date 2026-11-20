@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import * as api from "../api";
-import type { CreateTaskPayload, Task, TaskFilters, TaskStatus } from "../types";
+import type { CreateTaskPayload, Task, TaskFilters, TaskStatus, UpdateTaskPayload } from "../types";
 
 export type StatusCounts = Record<TaskStatus | "all", number>;
 
@@ -61,11 +61,10 @@ export function useTasks(filters: TaskFilters) {
     [status, priority],
   );
 
-  const updateStatus = useCallback(
-    async (id: string, nextStatus: TaskStatus) => {
-      const updated = await api.updateTask(id, { status: nextStatus });
+  const updateTask = useCallback(
+    async (id: string, payload: UpdateTaskPayload) => {
+      const updated = await api.updateTask(id, payload);
       setScope((prev) => prev.map((t) => (t._id === id ? updated : t)));
-      // Drop the task from view if it no longer matches the active filters.
       setTasks((prev) =>
         prev.flatMap((t) => (t._id !== id ? [t] : matchesFilters(updated, { status, priority }) ? [updated] : [])),
       );
@@ -74,11 +73,18 @@ export function useTasks(filters: TaskFilters) {
     [status, priority],
   );
 
+  const updateStatus = useCallback(
+    async (id: string, nextStatus: TaskStatus) => {
+      return updateTask(id, { status: nextStatus });
+    },
+    [updateTask],
+  );
+
   const deleteTask = useCallback(async (id: string) => {
     await api.deleteTask(id);
     setScope((prev) => prev.filter((t) => t._id !== id));
     setTasks((prev) => prev.filter((t) => t._id !== id));
   }, []);
 
-  return { tasks, counts, loading, error, reload, createTask, updateStatus, deleteTask };
+  return { tasks, counts, loading, error, reload, createTask, updateTask, updateStatus, deleteTask };
 }

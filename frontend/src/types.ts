@@ -37,7 +37,7 @@ export interface CreateTaskPayload {
 }
 
 /** PATCH /api/tasks/:id body */
-export type UpdateTaskPayload = Partial<Pick<Task, "status" | "priority">>;
+export type UpdateTaskPayload = Partial<Pick<Task, "title" | "description" | "status" | "priority">>;
 
 /** GET /api/tasks query */
 export interface TaskFilters {

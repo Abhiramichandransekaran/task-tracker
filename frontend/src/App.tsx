@@ -1,35 +1,58 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { BrandMark, LogoutIcon } from "./components/icons";
+import { KanbanBoard } from "./components/KanbanBoard";
 import { LoginPage } from "./components/LoginPage";
 import { TaskFilters } from "./components/TaskFilters";
 import { TaskForm } from "./components/TaskForm";
 import { TaskList } from "./components/TaskList";
+import { TaskModal } from "./components/TaskModal";
 import { Toast, useToast } from "./components/Toast";
 import { useTasks } from "./hooks/useTasks";
+import { launchConfetti } from "./utils/confetti";
 import {
+  PRIORITY_LABELS,
   STATUS_LABELS,
   type AdminUser,
+  type Task,
   type TaskFilters as Filters,
+  type TaskPriority,
   type TaskStatus,
 } from "./types";
 
 const AUTH_STORAGE_KEY = "team_tracker_admin_user";
+const THEME_STORAGE_KEY = "team_tracker_theme";
 
 function Dashboard({
   currentUser,
   onLogout,
   notify,
+  theme,
+  onToggleTheme,
 }: {
   currentUser: AdminUser;
   onLogout: () => void;
   notify: (msg: string) => void;
+  theme: "light" | "dark";
+  onToggleTheme: () => void;
 }) {
   const [filters, setFilters] = useState<Filters>({});
   const [searchQuery, setSearchQuery] = useState("");
-  const { tasks, counts, loading, error, reload, createTask, updateStatus, deleteTask } =
-    useTasks(filters);
-  const filtered = Boolean(filters.status || filters.priority || searchQuery);
+  const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
+  const {
+    tasks,
+    counts,
+    loading,
+    error,
+    reload,
+    createTask,
+    updateTask,
+    updateStatus,
+    deleteTask,
+  } = useTasks(filters);
+
+  const filtered = Boolean(filters.status || filters.priority || searchQuery);
   const safeTasks = Array.isArray(tasks) ? tasks : [];
   const safeCounts = counts || { all: 0, todo: 0, in_progress: 0, done: 0 };
 
@@ -48,18 +71,68 @@ function Dashboard({
   const handleStatusChange = useCallback(
     async (id: string, status: TaskStatus) => {
       await updateStatus(id, status);
-      notify(`Moved to ${STATUS_LABELS[status]}`);
+      if (status === "done") {
+        launchConfetti();
+        notify("🎉 Milestone reached! Task marked Done");
+      } else {
+        notify(`Moved to ${STATUS_LABELS[status]}`);
+      }
     },
     [updateStatus, notify]
+  );
+
+  const handleUpdateTask = useCallback(
+    async (
+      id: string,
+      payload: { title?: string; description?: string; status?: TaskStatus; priority?: TaskPriority }
+    ) => {
+      await updateTask(id, payload);
+      if (payload.status === "done") {
+        launchConfetti();
+        notify("🎉 Task completed!");
+      } else {
+        notify("Task updated successfully");
+      }
+      setSelectedTask(null);
+    },
+    [updateTask, notify]
   );
 
   const handleDelete = useCallback(
     async (id: string) => {
       await deleteTask(id);
       notify("Task deleted");
+      if (selectedTask?._id === id) setSelectedTask(null);
     },
-    [deleteTask, notify]
+    [deleteTask, notify, selectedTask]
   );
+
+  const handleExportCsv = () => {
+    if (safeTasks.length === 0) {
+      notify("No tasks available to export");
+      return;
+    }
+
+    const headers = ["ID", "Title", "Description", "Priority", "Status", "Created At"];
+    const rows = safeTasks.map((t) => [
+      `"${t._id}"`,
+      `"${t.title.replace(/"/g, '""')}"`,
+      `"${(t.description || "").replace(/"/g, '""')}"`,
+      `"${PRIORITY_LABELS[t.priority]}"`,
+      `"${STATUS_LABELS[t.status]}"`,
+      `"${t.createdAt}"`,
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `task_tracker_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    notify("Exported tasks to CSV successfully!");
+  };
 
   return (
     <div className="app">
@@ -79,6 +152,27 @@ function Dashboard({
           </div>
 
           <div className="topbar-right">
+            {/* Theme Toggle Button */}
+            <button
+              type="button"
+              className="theme-toggle-btn"
+              onClick={onToggleTheme}
+              title={`Switch to ${theme === "dark" ? "Light" : "Dark"} Mode`}
+              aria-label="Toggle color theme"
+            >
+              {theme === "dark" ? (
+                <>
+                  <span className="theme-toggle-icon">☀️</span>
+                  <span className="theme-toggle-text">Light</span>
+                </>
+              ) : (
+                <>
+                  <span className="theme-toggle-icon">🌙</span>
+                  <span className="theme-toggle-text">Dark</span>
+                </>
+              )}
+            </button>
+
             <div className="user-profile-chip" title={`Authenticated as ${currentUser.name}`}>
               <div className="user-avatar" aria-hidden="true">
                 {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : "A"}
@@ -111,7 +205,7 @@ function Dashboard({
           <div className="hero-text-block">
             <h1 className="hero-heading">Team Tasks & Bug Tracker</h1>
             <p className="hero-subheading">
-              Manage work items, assign status progression, and collaborate in real time.
+              Manage work items, track sprint velocity, and collaborate with your team.
             </p>
           </div>
 
@@ -162,8 +256,8 @@ function Dashboard({
           <TaskForm onCreate={createTask} />
         </aside>
 
-        {/* Right Column: Task List & Filter Controls */}
-        <section className="panel-container panel-container--list" aria-label="Task list">
+        {/* Right Column: Task List or Kanban Board */}
+        <section className="panel-container panel-container--list" aria-label="Task board">
           <TaskFilters
             value={filters}
             counts={safeCounts}
@@ -171,22 +265,46 @@ function Dashboard({
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onChange={setFilters}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            onExportCsv={handleExportCsv}
           />
-          <TaskList
-            tasks={displayedTasks}
-            loading={loading}
-            error={error}
-            filtered={filtered}
-            onRetry={reload}
-            onClearFilters={() => {
-              setFilters({});
-              setSearchQuery("");
-            }}
-            onStatusChange={handleStatusChange}
-            onDelete={handleDelete}
-          />
+
+          {viewMode === "list" ? (
+            <TaskList
+              tasks={displayedTasks}
+              loading={loading}
+              error={error}
+              filtered={filtered}
+              onRetry={reload}
+              onClearFilters={() => {
+                setFilters({});
+                setSearchQuery("");
+              }}
+              onStatusChange={handleStatusChange}
+              onDelete={handleDelete}
+              onSelectTask={setSelectedTask}
+            />
+          ) : (
+            <KanbanBoard
+              tasks={displayedTasks}
+              onStatusChange={handleStatusChange}
+              onDelete={handleDelete}
+              onSelectTask={setSelectedTask}
+            />
+          )}
         </section>
       </main>
+
+      {/* Task Inspection & Edit Modal */}
+      {selectedTask && (
+        <TaskModal
+          task={selectedTask}
+          onClose={() => setSelectedTask(null)}
+          onUpdate={handleUpdateTask}
+          onDelete={handleDelete}
+        />
+      )}
     </div>
   );
 }
@@ -200,6 +318,29 @@ export default function App() {
       return null;
     }
   });
+
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    try {
+      const saved = localStorage.getItem(THEME_STORAGE_KEY);
+      if (saved === "dark" || saved === "light") return saved;
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    } catch {
+      return "light";
+    }
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+      // ignore
+    }
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  }, []);
 
   const { toast, notify } = useToast();
 
@@ -237,6 +378,8 @@ export default function App() {
           currentUser={currentUser}
           onLogout={handleLogout}
           notify={notify}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
       )}
       <Toast toast={toast} />
