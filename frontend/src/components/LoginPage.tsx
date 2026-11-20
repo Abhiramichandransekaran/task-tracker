@@ -28,7 +28,6 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
       const res = await loginAdmin({ username: username.trim(), password });
       onSuccess(res.user, res.token);
     } catch (err: unknown) {
-      // In case backend is not running or returns 401
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -40,108 +39,126 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
   };
 
   return (
-    <div className="login-wrapper">
-      <div className="login-card">
-        {/* Header / Brand */}
-        <div className="login-brand">
-          <BrandMark />
-          <div className="login-brand-meta">
-            <span className="login-brand-title">Team Tracker</span>
-            <span className="login-badge-pill">
-              <ShieldIcon /> Admin Portal
-            </span>
-          </div>
-        </div>
+    <div className="login-page-root">
+      {/* Ambient background decoration */}
+      <div className="login-ambient-glow" aria-hidden="true" />
+      <div className="login-grid-pattern" aria-hidden="true" />
 
-        <div className="login-heading">
-          <h2>Sign In to Workspace</h2>
-          <p>Restricted admin access. Please authenticate to manage team tasks and issues.</p>
-        </div>
-
-        {/* Error notification */}
-        {error && (
-          <div className="login-error-alert" role="alert">
-            <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor" aria-hidden="true">
-              <path
-                fillRule="evenodd"
-                d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0zm-7 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm-1-9a1 1 0 0 0-1 1v4a1 1 0 1 0 2 0V6a1 1 0 0 0-1-1z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* Form */}
-        <form className="login-form" onSubmit={handleSubmit} noValidate>
-          <div className="login-field">
-            <label htmlFor="login-username">Admin Username or Email</label>
-            <div className="input-with-icon">
-              <span className="input-icon" aria-hidden="true">
-                <UserIcon />
+      <main className="login-page-container">
+        <div className="login-card">
+          {/* Brand & Security Badge */}
+          <div className="login-header">
+            <div className="login-logo-badge">
+              <BrandMark />
+            </div>
+            <div className="login-header-text">
+              <h1 className="login-title">Sign in to Team Tracker</h1>
+              <p className="login-subtitle">
+                Enter your administrator credentials to access the workspace
+              </p>
+            </div>
+            <div className="login-badge-row">
+              <span className="login-admin-chip">
+                <ShieldIcon /> Administrator Portal
               </span>
-              <input
-                id="login-username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="e.g. admin"
-                autoComplete="username"
-                autoFocus
-                required
-                disabled={loading}
-              />
             </div>
           </div>
 
-          <div className="login-field">
-            <label htmlFor="login-password">Password</label>
-            <div className="input-with-icon">
-              <span className="input-icon" aria-hidden="true">
-                <LockIcon />
-              </span>
-              <input
-                id="login-password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter admin password"
-                autoComplete="current-password"
-                required
-                disabled={loading}
-              />
-              <button
-                type="button"
-                className="password-toggle-btn"
-                onClick={() => setShowPassword((prev) => !prev)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                tabIndex={-1}
-              >
-                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-              </button>
+          {/* Error banner */}
+          {error && (
+            <div className="login-error-alert" role="alert">
+              <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor" aria-hidden="true">
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0zm-7 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm-1-9a1 1 0 0 0-1 1v4a1 1 0 1 0 2 0V6a1 1 0 0 0-1-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span>{error}</span>
             </div>
+          )}
+
+          {/* Login Form */}
+          <form className="login-form" onSubmit={handleSubmit} noValidate>
+            <div className="login-field-group">
+              <label htmlFor="login-username" className="login-field-label">
+                Admin Username or Email
+              </label>
+              <div className="login-input-wrapper">
+                <span className="login-input-icon" aria-hidden="true">
+                  <UserIcon />
+                </span>
+                <input
+                  id="login-username"
+                  type="text"
+                  className="login-input"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="e.g. admin"
+                  autoComplete="username"
+                  autoFocus
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
+            <div className="login-field-group">
+              <div className="login-field-header">
+                <label htmlFor="login-password" className="login-field-label">
+                  Password
+                </label>
+              </div>
+              <div className="login-input-wrapper">
+                <span className="login-input-icon" aria-hidden="true">
+                  <LockIcon />
+                </span>
+                <input
+                  id="login-password"
+                  type={showPassword ? "text" : "password"}
+                  className="login-input login-input--password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter admin password"
+                  autoComplete="current-password"
+                  required
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  className="login-password-toggle"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="login-submit-btn"
+              disabled={loading}
+            >
+              {loading ? (
+                <span className="login-btn-loading">
+                  <span className="login-spinner" aria-hidden="true" />
+                  Authenticating...
+                </span>
+              ) : (
+                "Sign In as Admin"
+              )}
+            </button>
+          </form>
+
+          {/* Security Guarantee Footer */}
+          <div className="login-security-footer">
+            <ShieldIcon />
+            <span>Encrypted Admin Session • Strict Workspace Access</span>
           </div>
-
-          <button
-            type="submit"
-            className="login-submit-btn"
-            disabled={loading}
-          >
-            {loading ? (
-              <span className="btn-loading-flex">
-                <span className="spinner" aria-hidden="true" />
-                Signing in...
-              </span>
-            ) : (
-              "Sign In as Admin"
-            )}
-          </button>
-        </form>
-
-        <div className="login-footer">
-          <span>Protected workspace • Strictly for authenticated administrators</span>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
