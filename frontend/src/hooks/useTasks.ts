@@ -30,8 +30,8 @@ export function useTasks(filters: TaskFilters) {
 
     Promise.all([listRequest, scopeRequest])
       .then(([list, all]) => {
-        setTasks(list);
-        setScope(all);
+        setTasks(Array.isArray(list) ? list : []);
+        setScope(Array.isArray(all) ? all : []);
       })
       .catch((err: unknown) => {
         if (!controller.signal.aborted) setError(api.errorMessage(err));

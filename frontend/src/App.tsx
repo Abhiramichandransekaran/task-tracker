@@ -15,56 +15,35 @@ import {
 
 const AUTH_STORAGE_KEY = "team_tracker_admin_user";
 
-export default function App() {
-  const [currentUser, setCurrentUser] = useState<AdminUser | null>(() => {
-    try {
-      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
-  });
-
+function Dashboard({
+  currentUser,
+  onLogout,
+  notify,
+}: {
+  currentUser: AdminUser;
+  onLogout: () => void;
+  notify: (msg: string) => void;
+}) {
   const [filters, setFilters] = useState<Filters>({});
   const [searchQuery, setSearchQuery] = useState("");
   const { tasks, counts, loading, error, reload, createTask, updateStatus, deleteTask } =
     useTasks(filters);
-  const { toast, notify } = useToast();
   const filtered = Boolean(filters.status || filters.priority || searchQuery);
 
-  const displayedTasks = tasks.filter((t) => {
+  const safeTasks = Array.isArray(tasks) ? tasks : [];
+  const safeCounts = counts || { all: 0, todo: 0, in_progress: 0, done: 0 };
+
+  const displayedTasks = safeTasks.filter((t) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
       t.title.toLowerCase().includes(q) ||
-      (t.description && t.description.toLowerCase().includes(q))
+      Boolean(t.description && t.description.toLowerCase().includes(q))
     );
   });
 
-  const completionPercent = counts.all > 0 ? Math.round((counts.done / counts.all) * 100) : 0;
-
-  const handleLoginSuccess = useCallback(
-    (user: AdminUser) => {
-      setCurrentUser(user);
-      try {
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
-      } catch {
-        // LocalStorage fallback
-      }
-      notify(`Welcome back, ${user.name}!`);
-    },
-    [notify]
-  );
-
-  const handleLogout = useCallback(() => {
-    setCurrentUser(null);
-    try {
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-    } catch {
-      // ignore
-    }
-    notify("Signed out successfully.");
-  }, [notify]);
+  const completionPercent =
+    safeCounts.all > 0 ? Math.round((safeCounts.done / safeCounts.all) * 100) : 0;
 
   const handleStatusChange = useCallback(
     async (id: string, status: TaskStatus) => {
@@ -81,16 +60,6 @@ export default function App() {
     },
     [deleteTask, notify]
   );
-
-  // If user is not authenticated, display the dedicated Admin Login Page
-  if (!currentUser) {
-    return (
-      <div className="app">
-        <LoginPage onSuccess={handleLoginSuccess} />
-        <Toast toast={toast} />
-      </div>
-    );
-  }
 
   return (
     <div className="app">
@@ -124,7 +93,7 @@ export default function App() {
             <button
               type="button"
               className="sign-out-btn"
-              onClick={handleLogout}
+              onClick={onLogout}
               aria-label="Sign out"
               title="Sign out"
             >
@@ -151,7 +120,7 @@ export default function App() {
             <div className="metric-card metric-card--total">
               <span className="metric-label">Total Issues</span>
               <div className="metric-value-row">
-                <span className="metric-number">{counts.all}</span>
+                <span className="metric-number">{safeCounts.all}</span>
                 <span className="metric-pill">All time</span>
               </div>
             </div>
@@ -159,7 +128,7 @@ export default function App() {
             <div className="metric-card metric-card--todo">
               <span className="metric-label">To Do</span>
               <div className="metric-value-row">
-                <span className="metric-number">{counts.todo}</span>
+                <span className="metric-number">{safeCounts.todo}</span>
                 <span className="metric-status-dot metric-status-dot--todo" />
               </div>
             </div>
@@ -167,7 +136,7 @@ export default function App() {
             <div className="metric-card metric-card--progress">
               <span className="metric-label">In Progress</span>
               <div className="metric-value-row">
-                <span className="metric-number">{counts.in_progress}</span>
+                <span className="metric-number">{safeCounts.in_progress}</span>
                 <span className="metric-status-dot metric-status-dot--progress" />
               </div>
             </div>
@@ -175,7 +144,7 @@ export default function App() {
             <div className="metric-card metric-card--done">
               <span className="metric-label">Completed</span>
               <div className="metric-value-row">
-                <span className="metric-number">{counts.done}</span>
+                <span className="metric-number">{safeCounts.done}</span>
                 <span className="metric-status-dot metric-status-dot--done" />
               </div>
               <div className="completion-bar-track" title={`${completionPercent}% completed`}>
@@ -197,7 +166,7 @@ export default function App() {
         <section className="panel-container panel-container--list" aria-label="Task list">
           <TaskFilters
             value={filters}
-            counts={counts}
+            counts={safeCounts}
             showCounts={!error}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -218,8 +187,59 @@ export default function App() {
           />
         </section>
       </main>
-
-      <Toast toast={toast} />
     </div>
+  );
+}
+
+export default function App() {
+  const [currentUser, setCurrentUser] = useState<AdminUser | null>(() => {
+    try {
+      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const { toast, notify } = useToast();
+
+  const handleLoginSuccess = useCallback(
+    (user: AdminUser) => {
+      setCurrentUser(user);
+      try {
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+      } catch {
+        // LocalStorage fallback
+      }
+      notify(`Welcome back, ${user.name}!`);
+    },
+    [notify]
+  );
+
+  const handleLogout = useCallback(() => {
+    setCurrentUser(null);
+    try {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+    notify("Signed out successfully.");
+  }, [notify]);
+
+  return (
+    <>
+      {!currentUser ? (
+        <div className="app">
+          <LoginPage onSuccess={handleLoginSuccess} />
+        </div>
+      ) : (
+        <Dashboard
+          currentUser={currentUser}
+          onLogout={handleLogout}
+          notify={notify}
+        />
+      )}
+      <Toast toast={toast} />
+    </>
   );
 }
