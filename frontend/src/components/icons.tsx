@@ -46,11 +46,11 @@ export function TrashIcon() {
 
 export function BrandMark() {
   return (
-    <svg className="brand-mark" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
-      <rect width="32" height="32" rx="8" className="brand-mark-bg" />
-      <rect x="7.5" y="18" width="3.5" height="6.5" rx="1.25" className="brand-mark-bar" opacity="0.55" />
-      <rect x="14.25" y="13" width="3.5" height="11.5" rx="1.25" className="brand-mark-bar" opacity="0.8" />
-      <rect x="21" y="7.5" width="3.5" height="17" rx="1.25" className="brand-mark-bar" />
+    <svg className="brand-mark" viewBox="0 0 32 32" width="36" height="36" aria-hidden="true">
+      <rect width="32" height="32" rx="8" fill="#2563eb" />
+      <rect x="7.5" y="18" width="3.5" height="6.5" rx="1.25" fill="#ffffff" opacity="0.6" />
+      <rect x="14.25" y="13" width="3.5" height="11.5" rx="1.25" fill="#ffffff" opacity="0.85" />
+      <rect x="21" y="7.5" width="3.5" height="17" rx="1.25" fill="#ffffff" />
     </svg>
   );
 }

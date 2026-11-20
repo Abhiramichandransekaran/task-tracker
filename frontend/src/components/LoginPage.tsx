@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { BrandMark, EyeIcon, EyeOffIcon, LockIcon, ShieldIcon, UserIcon } from "./icons";
+import { EyeIcon, EyeOffIcon, LockIcon, ShieldIcon, UserIcon } from "./icons";
 import { loginAdmin } from "../api";
 import type { AdminUser } from "../types";
 
@@ -49,10 +49,14 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
           {/* Brand & Security Badge */}
           <div className="login-header">
             <div className="login-logo-badge">
-              <BrandMark />
+              <div className="login-brand-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                </svg>
+              </div>
             </div>
             <div className="login-header-text">
-              <h1 className="login-title">Sign in to Team Tracker</h1>
+              <h1 className="login-title">Sign in to TaskPulse</h1>
               <p className="login-subtitle">
                 Enter your administrator credentials to access the workspace
               </p>

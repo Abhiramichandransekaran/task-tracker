@@ -1938,6 +1938,18 @@ body {
   margin-bottom: 12px;
 }
 
+.login-brand-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+}
+
 .login-title {
   margin: 0 0 6px;
   font-size: 21px;
