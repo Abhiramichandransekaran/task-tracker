@@ -91,3 +91,6 @@ Tests cover:
 
 2. **Server-Side Filtering vs. Cursor Pagination:**
    Tasks are sorted by newest first with server-side query filtering (`?status=` and `?priority=`). While ideal for small-to-medium team tracking, at higher scale this would be expanded to cursor-based pagination and a dedicated `/api/tasks/stats` aggregation endpoint.
+
+<!-- Verified deployment: Nov 2026 -->
+
